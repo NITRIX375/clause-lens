@@ -22,10 +22,7 @@ async function callClaude(prompt, maxTokens = 2000) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: maxTokens,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
+        generationConfig: { maxOutputTokens: maxTokens },
       }),
     }
   );
@@ -72,7 +69,7 @@ Respond ONLY with JSON, no markdown fences:
   "summary": "one sentence: what this document does",
   "jurisdictionHints": "any location/legal-system clues found, or null"
 }`;
-  return parseJson(await callClaude(prompt, 1500));
+  return parseJson(await callClaude(prompt, 3000));
 }
 
 export async function analyzeClauseBatch(profile, userRole, clauses) {
@@ -103,7 +100,7 @@ For EACH clause respond with an entry. Respond ONLY with JSON, no fences:
 }
 
 Risk guide: "red" = clearly one-sided against the reader, waives important rights, or hides significant cost/liability. "caution" = worth understanding fully, potentially negotiable. "standard" = normal for this document type. "info" = definitions/boilerplate with no risk decision.`;
-  const out = parseJson(await callClaude(prompt, 4500));
+  const out = parseJson(await callClaude(prompt, 8000));
   return out.clauses || [];
 }
 
@@ -125,7 +122,7 @@ Respond ONLY with JSON, no fences:
   "topConcerns": ["most important issue", ...max 3],
   "beforeSigning": ["concrete question to ask or thing to verify", ...max 5]
 }`;
-  return parseJson(await callClaude(prompt, 1800));
+  return parseJson(await callClaude(prompt, 3000));
 }
 
 export function countRisks(clauses) {
