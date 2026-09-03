@@ -12,17 +12,17 @@ export default function SettingsModal({ onClose }) {
           <button className="btn icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body">
-          <label className="field-label">Anthropic API key</label>
+          <label className="field-label">Gemini API key</label>
           <input
             type="password"
             className="field"
-            placeholder="sk-ant-…"
+            placeholder="AIza…"
             value={key}
             onChange={(e) => setKey(e.target.value)}
           />
           <p className="field-hint">
             Stored only in this browser's localStorage. Analysis calls go directly from your
-            browser to the Anthropic API — fine for personal use; for a public deployment, put
+            browser to the Gemini API — fine for personal use; for a public deployment, put
             the AI calls behind a small serverless proxy so the key never reaches clients.
           </p>
           <div className="modal-actions">

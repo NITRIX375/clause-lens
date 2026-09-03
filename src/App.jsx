@@ -165,7 +165,7 @@ export default function App() {
             <>
               <h2>Add your API key to analyze</h2>
               <p>
-                ClauseLens uses the Claude API for analysis. Add your Anthropic API key in
+                ClauseLens uses the Gemini API for analysis. Add your Gemini API key in
                 Settings — extraction happens locally either way.
               </p>
               <button className="btn primary" onClick={() => setShowSettings(true)}>

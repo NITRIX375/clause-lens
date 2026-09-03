@@ -1,8 +1,8 @@
-// AI Analyzer — three passes over the Anthropic API, called directly from the browser.
+// AI Analyzer — three passes over the Gemini API, called directly from the browser.
 // Pass 0: document profile (type, parties). Pass 1..N: batched clause analysis
 // from the user's perspective. Final: executive summary.
 
-const MODEL = 'claude-sonnet-5';
+const MODEL = 'gemini-2.5-flash';
 const BATCH_SIZE = 8;
 
 export function getApiKey() {
@@ -15,24 +15,21 @@ export function setApiKey(k) {
 async function callClaude(prompt, maxTokens = 2000) {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('NO_KEY');
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 180)}`);
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens },
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${(await res.text()).slice(0, 180)}`);
   const data = await res.json();
-  const text = data.content?.find((b) => b.type === 'text')?.text || '';
-  if (!text) throw new Error('Anthropic API returned an empty response.');
+  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
+  if (!text) throw new Error('Gemini API returned an empty response.');
   return text;
 }
 
