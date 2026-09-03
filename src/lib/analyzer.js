@@ -22,14 +22,23 @@ async function callClaude(prompt, maxTokens = 2000) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: maxTokens },
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     }
   );
   if (!res.ok) throw new Error(`Gemini API ${res.status}: ${(await res.text()).slice(0, 180)}`);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-  if (!text) throw new Error('Gemini API returned an empty response.');
+  const candidate = data.candidates?.[0];
+  const text = candidate?.content?.parts?.map((p) => p.text || '').join('') || '';
+  if (!text) {
+    if (candidate?.finishReason === 'MAX_TOKENS') {
+      throw new Error('Gemini response was cut off (hit max token limit) before producing an answer.');
+    }
+    throw new Error('Gemini API returned an empty response.');
+  }
   return text;
 }
 
@@ -63,7 +72,7 @@ Respond ONLY with JSON, no markdown fences:
   "summary": "one sentence: what this document does",
   "jurisdictionHints": "any location/legal-system clues found, or null"
 }`;
-  return parseJson(await callClaude(prompt, 800));
+  return parseJson(await callClaude(prompt, 1500));
 }
 
 export async function analyzeClauseBatch(profile, userRole, clauses) {
@@ -94,7 +103,7 @@ For EACH clause respond with an entry. Respond ONLY with JSON, no fences:
 }
 
 Risk guide: "red" = clearly one-sided against the reader, waives important rights, or hides significant cost/liability. "caution" = worth understanding fully, potentially negotiable. "standard" = normal for this document type. "info" = definitions/boilerplate with no risk decision.`;
-  const out = parseJson(await callClaude(prompt, 3500));
+  const out = parseJson(await callClaude(prompt, 4500));
   return out.clauses || [];
 }
 
@@ -116,7 +125,7 @@ Respond ONLY with JSON, no fences:
   "topConcerns": ["most important issue", ...max 3],
   "beforeSigning": ["concrete question to ask or thing to verify", ...max 5]
 }`;
-  return parseJson(await callClaude(prompt, 1200));
+  return parseJson(await callClaude(prompt, 1800));
 }
 
 export function countRisks(clauses) {
