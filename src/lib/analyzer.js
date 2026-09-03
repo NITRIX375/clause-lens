@@ -1,8 +1,8 @@
-// AI Analyzer — three passes over Claude via OpenRouter.
+// AI Analyzer — three passes over the Anthropic API, called directly from the browser.
 // Pass 0: document profile (type, parties). Pass 1..N: batched clause analysis
 // from the user's perspective. Final: executive summary.
 
-const MODEL = 'openrouter/free';
+const MODEL = 'claude-sonnet-5';
 const BATCH_SIZE = 8;
 
 export function getApiKey() {
@@ -15,11 +15,13 @@ export function setApiKey(k) {
 async function callClaude(prompt, maxTokens = 2000) {
   const apiKey = getApiKey();
   if (!apiKey) throw new Error('NO_KEY');
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
       model: MODEL,
@@ -27,16 +29,25 @@ async function callClaude(prompt, maxTokens = 2000) {
       messages: [{ role: 'user', content: prompt }],
     }),
   });
-  if (!res.ok) throw new Error(`OpenRouter API ${res.status}: ${(await res.text()).slice(0, 180)}`);
+  if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 180)}`);
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
+  const text = data.content?.find((b) => b.type === 'text')?.text || '';
+  if (!text) throw new Error('Anthropic API returned an empty response.');
+  return text;
 }
 
 function parseJson(text) {
   const clean = text.replace(/```json|```/g, '').trim();
   const start = clean.indexOf('{');
   const end = clean.lastIndexOf('}');
-  return JSON.parse(clean.slice(start, end + 1));
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error(`Could not find JSON in the model's response: "${clean.slice(0, 200)}"`);
+  }
+  try {
+    return JSON.parse(clean.slice(start, end + 1));
+  } catch (e) {
+    throw new Error(`Failed to parse the model's JSON response: ${e.message}`);
+  }
 }
 
 export async function documentProfile(text) {
