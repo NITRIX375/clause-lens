@@ -2,7 +2,7 @@
 // Pass 0: document profile (type, parties). Pass 1..N: batched clause analysis
 // from the user's perspective. Final: executive summary.
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-3.6-flash';
 const BATCH_SIZE = 8;
 
 export function getApiKey() {
